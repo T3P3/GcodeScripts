@@ -1,0 +1,78 @@
+# Script by Ian Pegg
+# Copy the source file and rename the copy to something like "Python test file.gcode"
+# This will preserve the original.
+
+
+# Edit the following line to put the full path and file name of the source file in below. 
+startfile = open("D:\RepRap\G Code Files Diamond hot end\Python test file.gcode",'r')
+
+# Edit the following line and put yhe name you want to use for the outp[ut file, as well as it's full path.
+endfile = open("D:\RepRap\G Code Files Diamond hot end\Python output.gcode", 'w')
+
+FilA=1.00 # Start value for first filament mixing ratio
+FilB=0.00 # Start value for second filamnt mixing ratio
+FilC=0.00 # Start value for 3rd filamnet mxing ratio
+
+Iteration =1 # Setting this to 1 means that it will only change from A to B
+             # Setting it to 2 means that it will change A to B then B to C
+             # Setting it to 3 means that it will change Ato B, then B to C then C to A.
+            
+
+counter=0 # This is used count the number of occurences of layer change. Once this value has been reached, the mixing ratio will be changed. 
+
+LayerChange="G1 Z" # String to look for.
+
+
+numLines=sum(1 for line in (startfile))
+               
+startfile.seek(0) # make sure we start at the beginning of the file
+
+
+# use the following to limit part of file?? Check the file length (number of lines, and set x to this at start
+
+for x in range (30,numLines):
+    
+#for line in startfile:
+    # if I use the above, it misses every other line but for x in range works ok.
+
+    LineText=(startfile.readline())
+    # uncomment the following line with caution - it really slows things down.
+    # print (LineText) 
+    endfile.write(LineText) 
+    if LayerChange in LineText:
+        counter=counter+1
+        print (counter) # This can be commeneted out but it's useful to see what's happening
+        if counter>2: # >2 = every 3rd layer, > 1 = every second, >0 = every layer etc
+            counter=0 # If the number of layer changes has been reached, reset the counter 
+            TextToWrite =("M567 P3 E"+'{0:.2f}'.format(FilA)+":"+'{0:.2f}'.format(FilB)+":"+'{0:.2f}'.format(FilC)+"\n")
+            endfile.write (TextToWrite)
+            print (TextToWrite)
+            if Iteration == 1: 
+                FilA=FilA-0.01
+                FilB=FilB+0.01
+                FilC=0.00
+                if FilA<0:
+                    FilA=0.00
+                    FilB=1.00
+                    Iteration =2
+            if Iteration==2:
+                FilA=0.00
+                FilB=FilB-0.01
+                FilC=FilC+0.01
+                if FilB<0:
+                    FilB=0.00
+                    FilC=1.00
+                    Iteration=3
+            if Iteration==3:
+                #FilC=FilC-0.01
+                #FilA=FilA+0.01
+                #FilB=0.00
+                #if FilC<0:
+                    FilC=1.00
+                    FilB=0.00
+                    FilA=0.00
+                    #Iteration =1
+              
+startfile.close()
+endfile.close()
+
